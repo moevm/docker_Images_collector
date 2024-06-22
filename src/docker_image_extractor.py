@@ -1,6 +1,8 @@
 import os
 import yaml
+import tempfile
 from git import Repo, GitCommandError, InvalidGitRepositoryError
+from urllib.parse import urlparse
 
 
 class GitRepositoryError(Exception):
@@ -20,6 +22,24 @@ def scan_repositories(base_path):
     for root, dirs, files in os.walk(base_path):
         if '.git' in dirs:
             repos.append(root)
+    return repos
+
+
+def scan_remote_repos(repo_urls):
+    repos = []
+    for url in repo_urls:
+        try:
+            parsed_url = urlparse(url)
+            repo_name = os.path.splitext(os.path.basename(parsed_url.path))[0]
+            local_path = os.path.join(tempfile.gettempdir(), repo_name)
+
+            if os.path.exists(local_path):
+                repos.append(local_path)
+            else:
+                Repo.clone_from(url, local_path)
+                repos.append(local_path)
+        except GitCommandError as e:
+            raise GitRepositoryError(f"Error cloning repository: {e}")
     return repos
 
 
@@ -72,7 +92,8 @@ def checkout_branch(repo, branch_name):
                 git.stash('pop')
             except GitCommandError as e:
                 raise BranchCheckoutError(
-                    f"An error occurred while popping stash. A merge conflict occurred. Please resolve the conflicts manually and commit the changes.")
+                    f"An error occurred while popping stash. A merge conflict occurred. " +
+                    f"Please resolve the conflicts manually and commit the changes.")
         else:
             git.checkout(branch_name)
 
@@ -153,29 +174,53 @@ def process_docker_files(repo_path):
     return docker_images
 
 
-def get_all_images_with_tags(base_path):
+def process_repository_images(repo_path):
     all_images = set()
-    repositories = scan_repositories(base_path)
-    for repo_path in repositories:
-        try:
-            repo = Repo(repo_path)
-            branches = get_all_branches(repo_path)
+    try:
+        repo = Repo(repo_path)
+        branches = get_all_branches(repo_path)
 
-            for branch in branches:
-                checkout_result = checkout_branch(repo, branch)
-                if checkout_result is not True:
-                    break
+        for branch in branches:
+            checkout_result = checkout_branch(repo, branch)
+            if checkout_result is not True:
+                break
 
-                images = process_docker_files(repo_path)
-                for image in images:
-                    all_images.add(image)
-
-        except BranchCheckoutError as e:
             images = process_docker_files(repo_path)
             for image in images:
                 all_images.add(image)
 
-        except (InvalidGitRepository, GitRepositoryError) as e:
-            continue
+    except BranchCheckoutError as e:
+        images = process_docker_files(repo_path)
+        for image in images:
+            all_images.add(image)
 
-    return [image for image in all_images if ':' in image and 'latest' not in image.split(':')[1]]
+    except (InvalidGitRepository, GitRepositoryError) as e:
+        pass
+
+    return all_images
+
+
+def filter_images(images):
+    return [image for image in images if ':' in image and 'latest' not in image.split(':')[1]]
+
+
+def get_all_images_with_tags(base_path):
+    all_images = set()
+    repositories = scan_repositories(base_path)
+
+    for repo_path in repositories:
+        images = process_repository_images(repo_path)
+        all_images.update(images)
+
+    return filter_images(all_images)
+
+
+def get_remote_repo_images_with_tags(repo_urls):
+    all_images = set()
+    repositories = scan_remote_repos(repo_urls)
+
+    for repo_path in repositories:
+        images = process_repository_images(repo_path)
+        all_images.update(images)
+
+    return filter_images(all_images)
