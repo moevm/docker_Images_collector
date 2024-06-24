@@ -16,16 +16,20 @@ A: В связи с событиями 30.05.2024 образы с hub.docker.com
 
 ## Запуск проекта
 ### Запуск проекта для локальных репозиториев
+```
 python main.py --function local --base_path "C:/Users/your_base_path" --save_directory "your_save_directory" --yandex_disk_directory "your_yandex_disk_directory" --yandex_disk_token "your_yandex_disk_token"
+```
 
 ### Запуск проекта для удаленных репозиториев
+```
 python main.py --function remote --repo_urls "your_repo_urls" --save_directory "your_save_directory" --yandex_disk_directory "your_yandex_disk_directory" --yandex_disk_token "your_yandex_disk_token"
+```
 
-Параметры:
-* --function local: Запуск в локальном режиме.
-* --base_path задает базовый путь для поиска локальных репозиториев.
-* --function remote: Запуск в удаленном режиме.
-* --repo_urls задает список URL-ов удаленных репозиториев, разделенных запятыми.
-* --save_directory определяет директорию, куда будут сохранены архивы Docker.
-* ---yandex_disk_directory указывает на директорию на Яндекс.Диске, куда будут загружены файлы.
-* --yandex_disk_token представляет собой токен для доступа к Яндекс.Диску.
+### Параметры:
+* **--function local**: Запуск в локальном режиме.
+* **--base_path** задает базовый путь для поиска локальных репозиториев.
+* **--function remote**: Запуск в удаленном режиме.
+* **--repo_urls** задает список URL-ов удаленных репозиториев, разделенных запятыми.
+* **--save_directory** определяет директорию, куда будут сохранены архивы Docker.
+* **--yandex_disk_directory** указывает на директорию на Яндекс.Диске, куда будут загружены файлы.
+* **--yandex_disk_token** представляет собой токен для доступа к Яндекс.Диску.
