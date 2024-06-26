@@ -26,7 +26,7 @@ def main():
         images = get_remote_repo_images_with_tags(repo_urls)
 
     save_docker_images(images, args.save_directory)
-    upload_to_yandex_disk(args.yandex_disk_directory, args.yandex_disk_token, args.yandex_disk_directory)
+    upload_to_yandex_disk(args.save_directory, args.yandex_disk_token, args.yandex_disk_directory)
 
 
 if __name__ == "__main__":
