@@ -1,4 +1,3 @@
-import os
 import argparse
 from src.docker_image_extractor import get_all_images_with_tags, get_remote_repo_images_with_tags
 from src.docker_image_loader import save_docker_images

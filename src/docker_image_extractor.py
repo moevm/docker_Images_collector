@@ -2,27 +2,14 @@ import os
 import yaml
 import tempfile
 from git import Repo, GitCommandError, InvalidGitRepositoryError
+from .exception import GitRepositoryError, InvalidGitRepository, BranchCheckoutError
 from urllib.parse import urlparse
 
 
-class GitRepositoryError(Exception):
-    pass
-
-
-class InvalidGitRepository(GitRepositoryError):
-    pass
-
-
-class BranchCheckoutError(GitRepositoryError):
-    pass
-
-
 def scan_repositories(base_path):
-    repos = []
-    for root, dirs, files in os.walk(base_path):
-        if '.git' in dirs:
-            repos.append(root)
-    return repos
+    return [
+        root for root, dirs, files in os.walk(base_path) if '.git' in dirs
+    ]
 
 
 def scan_remote_repos(repo_urls):
@@ -59,13 +46,11 @@ def get_all_branches(repo_path):
 
 
 def has_unmerged_paths(repo):
-    unmerged_files = repo.index.unmerged_blobs()
-    return bool(unmerged_files)
+    return bool(repo.index.unmerged_blobs())
 
 
 def list_changed_files(repo):
-    changed_files = [item.a_path for item in repo.index.diff(None)]
-    return changed_files
+    return [item.a_path for item in repo.index.diff(None)]
 
 
 def checkout_branch(repo, branch_name):
@@ -148,8 +133,6 @@ def parse_github_actions(actions_path):
                         images.append(step['image'])
     except yaml.YAMLError as e:
         raise GitRepositoryError(f"Error parsing YAML file {actions_path}")
-    except Exception as e:
-        raise GitRepositoryError(f"Unexpected error while processing file {actions_path}")
 
     return images
 
@@ -182,17 +165,15 @@ def process_repository_images(repo_path):
 
         for branch in branches:
             checkout_result = checkout_branch(repo, branch)
-            if checkout_result is not True:
+            if not checkout_result:
                 break
 
             images = process_docker_files(repo_path)
-            for image in images:
-                all_images.add(image)
+            all_images |= set(images)
 
     except BranchCheckoutError as e:
         images = process_docker_files(repo_path)
-        for image in images:
-            all_images.add(image)
+        all_images |= set(images)
 
     except (InvalidGitRepository, GitRepositoryError) as e:
         pass

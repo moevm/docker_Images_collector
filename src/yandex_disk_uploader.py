@@ -52,6 +52,11 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
     url = "https://cloud-api.yandex.net/v1/disk/resources/upload"
 
+    headers = {
+        "Authorization": f"OAuth {token}",
+        "Accept": "application/json",
+    }
+
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
     for file_name in files:
@@ -60,11 +65,6 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
         if local_md5 in yandex_files_md5.values():
             continue
-
-        headers = {
-            "Authorization": f"OAuth {token}",
-            "Accept": "application/json",
-        }
 
         params = {
             "path": f"{yandex_disk_directory}/{file_name}",
@@ -78,3 +78,16 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
             with open(file_path, "rb") as file:
                 requests.put(upload_url, headers={"Content-Type": "application/octet-stream"}, data=file)
+                upload_response = requests.put(
+                    upload_url,
+                    headers={"Content-Type": "application/octet-stream"},
+                    data=iter(lambda: file.read(4096), b''),
+                    stream=True
+                )
+
+                if upload_response.status_code == 201:
+                    print(f"Uploaded {file_name} to Yandex.Disk")
+                else:
+                    print(f"Failed to upload {file_name} to Yandex.Disk: {upload_response.text}")
+        else:
+            print(f"Failed to get upload URL for {file_name}: {response.text}")

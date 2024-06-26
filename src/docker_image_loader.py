@@ -1,5 +1,6 @@
 import os
 import subprocess
+from .exception import DockerDaemonNotRunningError
 
 
 def is_docker_running():
@@ -34,7 +35,7 @@ def save_docker_image(image, directory):
 
 def save_docker_images(images, directory):
     if not is_docker_running():
-        raise "Docker daemon is not running. Please start Docker and try again."
+        raise DockerDaemonNotRunningError("Docker daemon is not running. Please start Docker and try again.")
 
     for image in images:
         save_docker_image(image, directory)
