@@ -142,17 +142,17 @@ def process_docker_files(repo_path):
     for root, dirs, files in os.walk(repo_path):
         for file in files:
             if file == 'Dockerfile':
-                dockerfile_path = parse_dockerfile(os.path.join(root, file))
-                if dockerfile_path:
-                    docker_images += dockerfile_path
+                dockerfile_images = parse_dockerfile(os.path.join(root, file))
+                if dockerfile_images:
+                    docker_images += dockerfile_images
             elif file == 'docker-compose.yml':
-                compose_path = parse_docker_compose(os.path.join(root, file))
-                if compose_path:
-                    docker_images += compose_path
+                compose_images = parse_docker_compose(os.path.join(root, file))
+                if compose_images:
+                    docker_images += compose_images
             elif file.endswith('.yml') or file.endswith('.yaml'):
-                actions_path = parse_github_actions(os.path.join(root, file))
-                if actions_path:
-                    docker_images += actions_path
+                actions_images = parse_github_actions(os.path.join(root, file))
+                if actions_images:
+                    docker_images += actions_images
 
     return docker_images
 
