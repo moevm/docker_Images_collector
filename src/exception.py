@@ -1,8 +1,12 @@
-class DockerDaemonNotRunningError(Exception):
+class DockerImageCollectorError(Exception):
     pass
 
 
-class GitRepositoryError(Exception):
+class DockerDaemonNotRunningError(DockerImageCollectorError):
+    pass
+
+
+class GitRepositoryError(DockerImageCollectorError):
     pass
 
 
