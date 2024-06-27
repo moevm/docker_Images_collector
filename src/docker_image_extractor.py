@@ -192,7 +192,7 @@ def process_repository_images(repo_path):
         images = process_docker_files(repo_path)
         all_images |= set(images)
 
-    except (InvalidGitRepository, GitRepositoryError) as e:
+    except (InvalidGitRepository, GitRepositoryError, InvalidGitRepositoryError, ValueError) as e:
         pass
 
     finally:
