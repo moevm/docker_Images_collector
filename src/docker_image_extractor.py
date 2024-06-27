@@ -69,7 +69,7 @@ def checkout_branch(repo, branch_name):
             raise BranchCheckoutError(
                 "There are unmerged paths in the working directory. Staying on the current branch.")
 
-        if repo.is_dirty(untracked_files=True):
+        if repo.is_dirty(untracked_files=False):
             git.stash('save', 'Auto-stash before checkout')
             git.checkout(branch_name)
 
@@ -118,21 +118,34 @@ def parse_docker_compose(compose_path):
     return images
 
 
+def find_images_recursive(data):
+    images = []
+
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if key == 'image' and isinstance(value, str):
+                images.append(value)
+            elif isinstance(value, (dict, list)):
+                images.extend(find_images_recursive(value))
+    elif isinstance(data, list):
+        for item in data:
+            images.extend(find_images_recursive(item))
+
+    return images
+
+
 def parse_github_actions(actions_path):
     images = []
     try:
         with open(actions_path, 'r', encoding='utf-8') as file:
             actions_content = yaml.safe_load(file)
-            if actions_content is None:
+            if not actions_content:
                 return images
-            jobs = actions_content.get('jobs', {})
-            for job in jobs.values():
-                steps = job.get('steps', [])
-                for step in steps:
-                    if 'image' in step:
-                        images.append(step['image'])
-    except yaml.YAMLError as e:
-        raise GitRepositoryError(f"Error parsing YAML file {actions_path}")
+
+            images = find_images_recursive(actions_content)
+
+    except (yaml.YAMLError, IOError) as e:
+        raise GitRepositoryError(f"Error parsing YAML file {actions_path}: {e}")
 
     return images
 
@@ -168,6 +181,7 @@ def process_repository_images(repo_path):
 
         for branch in branches:
             checkout_result = checkout_branch(repo, branch)
+
             if not checkout_result:
                 break
 

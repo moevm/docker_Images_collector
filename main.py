@@ -46,7 +46,6 @@ def main():
         print(f"Correct images: {images}.\n")
 
     save_docker_images(images, args.save_directory)
-    print("Docker images saved successfully.\n")
 
     if args.yandex_disk_token and args.yandex_disk_directory:
         if check_yandex_disk_token(args.yandex_disk_token):
