@@ -64,6 +64,7 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
         local_md5 = calculate_md5(file_path)
 
         if local_md5 in yandex_files_md5.values():
+            print(f"File {file_name} already exists on Yandex.Disk. Skipping upload.", flush=True)
             continue
 
         params = {
@@ -75,9 +76,9 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
         if response.status_code == 200:
             upload_url = response.json()["href"]
+            print(f"Starting upload of {file_name} to Yandex.Disk...", flush=True)
 
             with open(file_path, "rb") as file:
-                requests.put(upload_url, headers={"Content-Type": "application/octet-stream"}, data=file)
                 upload_response = requests.put(
                     upload_url,
                     headers={"Content-Type": "application/octet-stream"},
@@ -86,8 +87,9 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
                 )
 
                 if upload_response.status_code == 201:
-                    print(f"Uploaded {file_name} to Yandex.Disk")
+                    print(f"Uploaded {file_name} to Yandex.Disk", flush=True)
                 else:
-                    print(f"Failed to upload {file_name} to Yandex.Disk: {upload_response.text}")
+                    print(f"Failed to upload {file_name} to Yandex.Disk: {upload_response.text}", flush=True)
         else:
-            print(f"Failed to get upload URL for {file_name}: {response.text}")
+            print(f"Failed to get upload URL for {file_name}: {response.text}", flush=True)
+
