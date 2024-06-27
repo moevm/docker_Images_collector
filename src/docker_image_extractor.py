@@ -99,7 +99,7 @@ def checkout_branch(repo, branch_name):
 
 def parse_dockerfile(dockerfile_path):
     images = []
-    with open(dockerfile_path, 'r') as file:
+    with open(dockerfile_path, 'r', encoding='utf-8') as file:
         for line in file:
             if line.startswith('FROM'):
                 images.append(line.split()[1])
@@ -108,7 +108,7 @@ def parse_dockerfile(dockerfile_path):
 
 def parse_docker_compose(compose_path):
     images = []
-    with open(compose_path, 'r') as file:
+    with open(compose_path, 'r', encoding='utf-8') as file:
         compose_content = yaml.safe_load(file)
         services = compose_content.get('services', {})
         for service in services.values():
@@ -121,7 +121,7 @@ def parse_docker_compose(compose_path):
 def parse_github_actions(actions_path):
     images = []
     try:
-        with open(actions_path, 'r') as file:
+        with open(actions_path, 'r', encoding='utf-8') as file:
             actions_content = yaml.safe_load(file)
             if actions_content is None:
                 return images
