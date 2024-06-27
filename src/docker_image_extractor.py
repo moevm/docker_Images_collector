@@ -164,6 +164,7 @@ def process_repository_images(repo_path):
         repo = Repo(repo_path)
         branches = get_all_branches(repo_path)
 
+        # Save the current branch
         original_branch = repo.active_branch.name
 
         for branch in branches:
@@ -182,9 +183,10 @@ def process_repository_images(repo_path):
         pass
 
     finally:
+        # Checkout the original branch
         if original_branch:
             try:
-                # checkout_branch(repo, original_branch)
+                #checkout_branch(repo, original_branch)
                 print(f"original {original_branch}")
                 repo = Repo(repo_path)
                 git = repo.git
