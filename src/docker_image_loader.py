@@ -21,7 +21,7 @@ def image_exists(image):
 
 def save_docker_image(image, directory):
     if not image_exists(image):
-        return
+        return False
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -29,8 +29,10 @@ def save_docker_image(image, directory):
     file_name = os.path.join(directory, image.replace(":", "_") + ".tar")
     try:
         subprocess.run(["docker", "save", "-o", file_name, image], check=True)
+        return True
     except subprocess.CalledProcessError as e:
         pass
+    return False
 
 
 def save_docker_images(images, directory):
@@ -38,4 +40,9 @@ def save_docker_images(images, directory):
         raise DockerDaemonNotRunningError("Docker daemon is not running. Please start Docker and try again.")
 
     for image in images:
-        save_docker_image(image, directory)
+        print(f"Starting to save Docker image {image} as tar archive...", flush=True)
+        success = save_docker_image(image, directory)
+        if success:
+            print(f"Successfully saved {image}.\n")
+        else:
+            print(f"Failed to save {image}.\n")

@@ -187,21 +187,33 @@ def filter_images(images):
 
 def get_all_images_with_tags(base_path):
     all_images = set()
+    print(f"Scanning local repositories in {base_path}...")
     repositories = scan_repositories(base_path)
 
     for repo_path in repositories:
+        print(f"Processing repository: {repo_path}")
         images = process_repository_images(repo_path)
         all_images.update(images)
+        if images:
+            print(f"Found images in {repo_path}: {images}\n")
+        else:
+            print(f"No images found in {repo_path}.\n")
 
     return filter_images(all_images)
 
 
 def get_remote_repo_images_with_tags(repo_urls):
     all_images = set()
+    print(f"Cloning remote repositories: {repo_urls}...")
     repositories = scan_remote_repos(repo_urls)
 
     for repo_path in repositories:
+        print(f"Processing repository: {repo_path}")
         images = process_repository_images(repo_path)
         all_images.update(images)
+        if images:
+            print(f"Found images in {repo_path}: {images}\n")
+        else:
+            print(f"No images found in {repo_path}.\n")
 
     return filter_images(all_images)
