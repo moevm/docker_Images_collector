@@ -159,9 +159,13 @@ def process_docker_files(repo_path):
 
 def process_repository_images(repo_path):
     all_images = set()
+    original_branch = None
     try:
         repo = Repo(repo_path)
         branches = get_all_branches(repo_path)
+
+        # Save the current branch
+        original_branch = repo.active_branch.name
 
         for branch in branches:
             checkout_result = checkout_branch(repo, branch)
@@ -177,6 +181,14 @@ def process_repository_images(repo_path):
 
     except (InvalidGitRepository, GitRepositoryError) as e:
         pass
+
+    finally:
+        # Checkout the original branch
+        if original_branch:
+            try:
+                checkout_branch(repo, original_branch)
+            except BranchCheckoutError as e:
+                print(f"Failed to return to the original branch '{original_branch}': {e}")
 
     return all_images
 
