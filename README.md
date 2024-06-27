@@ -15,6 +15,11 @@ A: В связи с событиями 30.05.2024 образы с hub.docker.com
 - загружать скачанные образы на яндекс.диск, с учетом контрольной суммы, чтобы несколько раз не загружать один и тот же образ
 
 ## Запуск проекта
+### Установка зависимостей
+```
+pip3 install -r requirements.txt
+```
+
 ### Запуск проекта для локальных репозиториев
 ```
 python main.py --function local --base_path "C:/Users/your_base_path" --save_directory "your_save_directory" --yandex_disk_directory "your_yandex_disk_directory" --yandex_disk_token "your_yandex_disk_token"
