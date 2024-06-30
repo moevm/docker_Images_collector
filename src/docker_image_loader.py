@@ -53,7 +53,7 @@ def save_docker_images(images, directory):
         raise DockerDaemonNotRunningError("Docker daemon is not running. Please start Docker and try again.")
 
     for image in images:
-        print(f"Starting to save Docker image {image} as tar archive...")
+        print(f"Starting to save Docker image {image} as tar archive*")
         success = save_docker_image(image, directory)
         if success:
             print(f"Successfully saved {image}.\n")

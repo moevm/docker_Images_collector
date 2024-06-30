@@ -213,7 +213,7 @@ def filter_images(images):
 
 def get_all_images_with_tags(base_path):
     all_images = set()
-    print(f"Scanning local repositories in {base_path}...")
+    print(f"Scanning local repositories in {base_path}*")
     repositories = scan_repositories(base_path)
 
     for repo_path in repositories:

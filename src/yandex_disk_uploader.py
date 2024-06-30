@@ -76,7 +76,7 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
         if response.status_code == 200:
             upload_url = response.json()["href"]
-            print(f"Starting upload of {file_name} to Yandex.Disk...", flush=True)
+            print(f"Starting upload of {file_name} to Yandex.Disk*", flush=True)
 
             with open(file_path, "rb") as file:
                 upload_response = requests.put(
