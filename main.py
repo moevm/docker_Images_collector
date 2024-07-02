@@ -1,8 +1,21 @@
 import argparse
+import subprocess
 import requests
+import platform
 from src.docker_image_extractor import get_all_images_with_tags, get_remote_repo_images_with_tags
 from src.docker_image_loader import save_docker_images, is_docker_running
 from src.yandex_disk_uploader import upload_to_yandex_disk
+
+
+def is_docker_installed():
+    try:
+        if platform.system() == "Windows":
+            subprocess.run(["where", "docker"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else:
+            subprocess.run(["which", "docker"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def check_yandex_disk_token(token):
@@ -22,6 +35,10 @@ def main():
     parser.add_argument("--yandex_disk_token", required=False, help="Token for Yandex Disk")
 
     args = parser.parse_args()
+
+    if not is_docker_installed():
+        print("Docker is not installed. Please install Docker and try again.")
+        return
 
     if not is_docker_running():
         print("Docker daemon is not running. Please start Docker and try again.")

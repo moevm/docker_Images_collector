@@ -1,4 +1,6 @@
 import os
+import re
+import itertools
 import yaml
 import tempfile
 from git import Repo, GitCommandError, InvalidGitRepositoryError
@@ -118,20 +120,37 @@ def parse_docker_compose(compose_path):
     return images
 
 
-def find_images_recursive(data):
+def find_images_recursive(data, variables=None):
     images = []
+    if variables is None:
+        variables = {}
 
     if isinstance(data, dict):
         for key, value in data.items():
             if key == 'image' and isinstance(value, str):
-                images.append(value)
-            elif isinstance(value, (dict, list)):
-                images.extend(find_images_recursive(value))
+                images.append(replace_variables(value, variables))
+            else:
+                images.extend(find_images_recursive(value, variables))
     elif isinstance(data, list):
         for item in data:
-            images.extend(find_images_recursive(item))
-
+            images.extend(find_images_recursive(item, variables))
     return images
+
+
+def replace_variables(value, variables):
+    pattern = re.compile(r'\$\{\{\s*(.*?)\s*\}\}')
+
+    def replacer(match):
+        var_name = match.group(1).replace('matrix.', '')
+        return str(variables.get(var_name, match.group(0)))
+
+    return pattern.sub(replacer, value)
+
+
+def extract_variable_combinations(content):
+    matrix = content.get('jobs', {}).get('test', {}).get('strategy', {}).get('matrix', {})
+    keys, values = zip(*matrix.items()) if matrix else ([], [])
+    return [dict(zip(keys, combo)) for combo in itertools.product(*values)]
 
 
 def parse_github_actions(actions_path):
@@ -142,7 +161,9 @@ def parse_github_actions(actions_path):
             if not actions_content:
                 return images
 
-            images = find_images_recursive(actions_content)
+            variable_combinations = extract_variable_combinations(actions_content)
+            for variables in variable_combinations:
+                images.extend(find_images_recursive(actions_content, variables))
 
     except (yaml.YAMLError, IOError) as e:
         raise GitRepositoryError(f"Error parsing YAML file {actions_path}: {e}")
@@ -213,7 +234,7 @@ def filter_images(images):
 
 def get_all_images_with_tags(base_path):
     all_images = set()
-    print(f"Scanning local repositories in {base_path}...")
+    print(f"Scanning local repositories in {base_path}*")
     repositories = scan_repositories(base_path)
 
     for repo_path in repositories:
