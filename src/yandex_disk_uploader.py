@@ -1,13 +1,21 @@
 import os
+import tempfile
 import requests
+import tarfile
 import hashlib
 
 
-def calculate_md5(file_path, chunk_size=8192):
+def calculate_md5(tar_path, extract_path, chunk_size=8192):
+    with tarfile.open(tar_path, "r") as tar:
+        tar.extractall(path=extract_path)
+
     md5 = hashlib.md5()
-    with open(file_path, "rb") as f:
-        while chunk := f.read(chunk_size):
-            md5.update(chunk)
+    for root, _, files in os.walk(extract_path):
+        for file in sorted(files):
+            file_path = os.path.join(root, file)
+            with open(file_path, "rb") as f:
+                while chunk := f.read(chunk_size):
+                    md5.update(chunk)
     return md5.hexdigest()
 
 
@@ -59,37 +67,37 @@ def upload_to_yandex_disk(directory, token, yandex_disk_directory):
 
     files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
-    for file_name in files:
-        file_path = os.path.join(directory, file_name)
-        local_md5 = calculate_md5(file_path)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        for file_name in files:
+            file_path = os.path.join(directory, file_name)
+            local_md5 = calculate_md5(file_path, tmpdirname)
 
-        if local_md5 in yandex_files_md5.values():
-            print(f"File {file_name} already exists on Yandex.Disk. Skipping upload.", flush=True)
-            continue
+            if local_md5 in yandex_files_md5.values() :
+                print(f"File {file_name} already exists on Yandex.Disk. Skipping upload.")
+                continue
 
-        params = {
-            "path": f"{yandex_disk_directory}/{file_name}",
-            "overwrite": "true",
-        }
+            params = {
+                "path": f"{yandex_disk_directory}/{file_name}",
+                "overwrite": "true",
+            }
 
-        response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, headers=headers, params=params)
 
-        if response.status_code == 200:
-            upload_url = response.json()["href"]
-            print(f"Starting upload of {file_name} to Yandex.Disk")
+            if response.status_code == 200:
+                upload_url = response.json()["href"]
+                print(f"Starting upload of {file_name} to Yandex.Disk")
 
-            with open(file_path, "rb") as file:
-                upload_response = requests.put(
-                    upload_url,
-                    headers={"Content-Type": "application/octet-stream"},
-                    data=iter(lambda: file.read(4096), b''),
-                    stream=True
-                )
+                with open(file_path, "rb") as file:
+                    upload_response = requests.put(
+                        upload_url,
+                        headers={"Content-Type": "application/octet-stream"},
+                        data=iter(lambda: file.read(4096), b''),
+                        stream=True
+                    )
 
-                if upload_response.status_code == 201:
-                    print(f"Uploaded {file_name} to Yandex.Disk")
-                else:
-                    print(f"Failed to upload {file_name} to Yandex.Disk: {upload_response.text}")
-        else:
-            print(f"Failed to get upload URL for {file_name}: {response.text}")
-
+                    if upload_response.status_code == 201:
+                        print(f"Uploaded {file_name} to Yandex.Disk")
+                    else:
+                        print(f"Failed to upload {file_name} to Yandex.Disk: {upload_response.text}")
+            else:
+                print(f"Failed to get upload URL for {file_name}: {response.text}")
