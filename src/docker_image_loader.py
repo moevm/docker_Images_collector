@@ -59,4 +59,3 @@ def save_docker_images(images, directory):
             print(f"Successfully saved {image}.\n")
         else:
             print(f"Failed to save {image}.\n")
-

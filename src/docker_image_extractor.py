@@ -120,10 +120,12 @@ def parse_docker_compose(compose_path):
     return images
 
 
+import itertools
+
+
 def find_images_recursive(data, variables=None):
     images = []
-    if variables is None:
-        variables = {}
+    variables = variables or {}
 
     if isinstance(data, dict):
         for key, value in data.items():
@@ -141,16 +143,48 @@ def replace_variables(value, variables):
     pattern = re.compile(r'\$\{\{\s*(.*?)\s*\}\}')
 
     def replacer(match):
-        var_name = match.group(1).replace('matrix.', '')
-        return str(variables.get(var_name, match.group(0)))
+        var_name = match.group(1)
+        for var_key, var_value in variables.items():
+            if var_key.endswith(var_name):
+                return str(var_value)
+        return match.group(0)
 
     return pattern.sub(replacer, value)
 
 
-def extract_variable_combinations(content):
-    matrix = content.get('jobs', {}).get('test', {}).get('strategy', {}).get('matrix', {})
-    keys, values = zip(*matrix.items()) if matrix else ([], [])
-    return [dict(zip(keys, combo)) for combo in itertools.product(*values)]
+def extract_variables(data):
+    variables = {}
+
+    def explore_dict(d, prefix=''):
+        for key, value in d.items():
+            if isinstance(value, dict):
+                explore_dict(value, f"{prefix}{key}.")
+            elif isinstance(value, list):
+                explore_list(value, f"{prefix}{key}.")
+            else:
+                variables[f"{prefix}{key}"] = value
+
+    def explore_list(l, prefix=''):
+        for index, item in enumerate(l):
+            if isinstance(item, dict):
+                explore_dict(item, f"{prefix}{index}.")
+            elif isinstance(item, list):
+                explore_list(item, f"{prefix}{index}.")
+            else:
+                variables[prefix[:-1]] = [item] if prefix[:-1] not in variables else [item] + variables[prefix[:-1]]
+
+    if isinstance(data, dict):
+        explore_dict(data)
+    elif isinstance(data, list):
+        explore_list(data)
+
+    return variables
+
+
+def generate_combinations(variables):
+    keys = list(variables.keys())
+    values = list(itertools.product(*[v if isinstance(v, list) else [v] for v in variables.values()]))
+    return [dict(zip(keys, combo)) for combo in values]
 
 
 def parse_github_actions(actions_path):
@@ -161,9 +195,11 @@ def parse_github_actions(actions_path):
             if not actions_content:
                 return images
 
-            variable_combinations = extract_variable_combinations(actions_content)
-            for variables in variable_combinations:
-                images.extend(find_images_recursive(actions_content, variables))
+            variables = extract_variables(actions_content)
+            variable_combinations = generate_combinations(variables)
+
+            for combination in variable_combinations:
+                images.extend(find_images_recursive(actions_content, combination))
 
     except (yaml.YAMLError, IOError) as e:
         raise GitRepositoryError(f"Error parsing YAML file {actions_path}: {e}")
@@ -176,17 +212,11 @@ def process_docker_files(repo_path):
     for root, dirs, files in os.walk(repo_path):
         for file in files:
             if file == 'Dockerfile':
-                dockerfile_images = parse_dockerfile(os.path.join(root, file))
-                if dockerfile_images:
-                    docker_images += dockerfile_images
+                docker_images.extend(parse_dockerfile(os.path.join(root, file)))
             elif file == 'docker-compose.yml':
-                compose_images = parse_docker_compose(os.path.join(root, file))
-                if compose_images:
-                    docker_images += compose_images
+                docker_images.extend(parse_docker_compose(os.path.join(root, file)))
             elif file.endswith('.yml') or file.endswith('.yaml'):
-                actions_images = parse_github_actions(os.path.join(root, file))
-                if actions_images:
-                    docker_images += actions_images
+                docker_images.extend(parse_github_actions(os.path.join(root, file)))
 
     return docker_images
 
